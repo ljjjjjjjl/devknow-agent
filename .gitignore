@@ -1,0 +1,22 @@
+# —— Python ——
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# —— 配置：含 API key 与数据库口令，绝不提交（.env.example 是模板）——
+.env
+
+# —— 采集临时文件：下载解压出来的 tarball，删掉重跑就能重建 ——
+data/ingest/
+
+# —— 评测产物：逐条明细与日志，需要时重跑脚本生成 ——
+eval_out/
+
+# —— 编辑器 / 系统 ——
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

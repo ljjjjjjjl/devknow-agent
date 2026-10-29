@@ -1,0 +1,410 @@
+[
+ {
+  "id": "ki-01",
+  "set": "known-item",
+  "query": "Use a separate ObjectMapper per technology",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/33438"
+  ]
+ },
+ {
+  "id": "ki-02",
+  "set": "known-item",
+  "query": "GraphQL slice tests should load '@ControllerAdvice' beans",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/49659",
+   "https://github.com/spring-projects/spring-boot/pull/49660"
+  ]
+ },
+ {
+  "id": "ki-03",
+  "set": "known-item",
+  "query": "Automatically configure Spring Kafka's observation convention beans",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/48914"
+  ]
+ },
+ {
+  "id": "ki-04",
+  "set": "known-item",
+  "query": "Unable to run nativeTests when non-constant value is passed as command-line app args",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/49316"
+  ]
+ },
+ {
+  "id": "ki-05",
+  "set": "known-item",
+  "query": "ConfigTreePropertySource.PropertyFileContent does not implement equals/hashCode",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/50181"
+  ]
+ },
+ {
+  "id": "ki-06",
+  "set": "known-item",
+  "query": "Allow beans created in MockRestServiceServerAutoConfiguration to be overridden",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/46853",
+   "https://github.com/spring-projects/spring-boot/pull/48825"
+  ]
+ },
+ {
+  "id": "ki-07",
+  "set": "known-item",
+  "query": "Regression in ImportsCleanupPostProcessor in Spring Boot 3.5.14 (potentially in 4.0.6)",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/50230"
+  ]
+ },
+ {
+  "id": "ki-08",
+  "set": "known-item",
+  "query": "Document the need for a JdbcDialect bean when using Spring Data JDBC and AOT",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/48240"
+  ]
+ },
+ {
+  "id": "ki-09",
+  "set": "known-item",
+  "query": "tomcat-embed-core and tomcat-embed-websocket, update to 10.1.54 within spring 3.5.x",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/50073"
+  ]
+ },
+ {
+  "id": "ki-10",
+  "set": "known-item",
+  "query": "Create reusable default TaskScheduler configuration",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/49280"
+  ]
+ },
+ {
+  "id": "ki-11",
+  "set": "known-item",
+  "query": "Incorrect/missing Hibernate version in release notes",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/51786"
+  ]
+ },
+ {
+  "id": "ki-12",
+  "set": "known-item",
+  "query": "Some logs are dismissed during context creation",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/7772"
+  ]
+ },
+ {
+  "id": "ki-13",
+  "set": "known-item",
+  "query": "Provide PathPatternRequestMatcher.Builder that correctly configures the servlet path",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/37917"
+  ]
+ },
+ {
+  "id": "ki-14",
+  "set": "known-item",
+  "query": "Fail gRPC servlet applications if server.http2.enabled is not enabled",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/49050"
+  ]
+ },
+ {
+  "id": "ki-15",
+  "set": "known-item",
+  "query": "IllegalState Failed to load ApplicationContext",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/49246"
+  ]
+ },
+ {
+  "id": "ki-16",
+  "set": "known-item",
+  "query": "Rainbow Gum a logging framework supports LoggingSystem (maybe a doc link?)",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/51904"
+  ]
+ },
+ {
+  "id": "ki-17",
+  "set": "known-item",
+  "query": "Spring Boot Maven plugin doesn't recognize new Java 25 main methods",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/48494"
+  ]
+ },
+ {
+  "id": "ki-18",
+  "set": "known-item",
+  "query": "Implement multi-tenancy support with automatic tenant context propagation",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/50705"
+  ]
+ },
+ {
+  "id": "ki-19",
+  "set": "known-item",
+  "query": "Add architecture option for spring-boot-maven-plugin when using buildpacks",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/33494"
+  ]
+ },
+ {
+  "id": "ki-20",
+  "set": "known-item",
+  "query": "Document SSL reload with letsencrypt",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/38275",
+   "https://github.com/spring-projects/spring-boot/pull/50222"
+  ]
+ },
+ {
+  "id": "ki-21",
+  "set": "known-item",
+  "query": "UnsatisfiedLinkError in Docker container when using WebClient",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/48230"
+  ]
+ },
+ {
+  "id": "ki-22",
+  "set": "known-item",
+  "query": "Eagerly initialize JdbcTemplate's SQLExceptionTranslator without requiring a DB connection",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/28842"
+  ]
+ },
+ {
+  "id": "ki-23",
+  "set": "known-item",
+  "query": "Redis HealthIndicator status not showing in actuator",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/51288"
+  ]
+ },
+ {
+  "id": "ki-24",
+  "set": "known-item",
+  "query": "Allow tools jarmode to run the extract command from an unpacked jar",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/43294"
+  ]
+ },
+ {
+  "id": "ki-25",
+  "set": "known-item",
+  "query": "Allow disabling OAuth2 / OIDC provider discovery explicitly",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/42172",
+   "https://github.com/spring-projects/spring-boot/pull/51941"
+  ]
+ },
+ {
+  "id": "ki-26",
+  "set": "known-item",
+  "query": "Allow Hibernate to use Spring Boot's validator",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/15829"
+  ]
+ },
+ {
+  "id": "ki-27",
+  "set": "known-item",
+  "query": "CVE-2025-68161: org.apache.logging.log4j / log4j-api 2.24.3",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/48809"
+  ]
+ },
+ {
+  "id": "ki-28",
+  "set": "known-item",
+  "query": "Provide auto-configuration for Liquibase with NoSQL databases",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/37936"
+  ]
+ },
+ {
+  "id": "ki-29",
+  "set": "known-item",
+  "query": "Upgrade 3.4.x & 3.5.x to Byte Buddy 1.17.8",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/47882"
+  ]
+ },
+ {
+  "id": "ki-30",
+  "set": "known-item",
+  "query": "Restore support for Jersey now that it supports JAX-RS 4 (Jakarta EE 11)",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/issues/47967"
+  ]
+ },
+ {
+  "id": "cn-01",
+  "set": "chinese",
+  "query": "如何配置多个数据源",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/how-to/pages/data-access.adoc"
+  ]
+ },
+ {
+  "id": "cn-02",
+  "set": "chinese",
+  "query": "Spring Boot 怎么连接 Redis",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/data/nosql.adoc"
+  ]
+ },
+ {
+  "id": "cn-03",
+  "set": "chinese",
+  "query": "如何激活不同的 profile",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/profiles.adoc"
+  ]
+ },
+ {
+  "id": "cn-04",
+  "set": "chinese",
+  "query": "怎么自定义 JSON 序列化",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/json.adoc"
+  ]
+ },
+ {
+  "id": "cn-05",
+  "set": "chinese",
+  "query": "如何编写一个自动配置类",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/developing-auto-configuration.adoc"
+  ]
+ },
+ {
+  "id": "cn-06",
+  "set": "chinese",
+  "query": "怎么配置日志级别",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/logging.adoc"
+  ]
+ },
+ {
+  "id": "cn-07",
+  "set": "chinese",
+  "query": "如何给应用写单元测试",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/testing/spring-boot-applications.adoc"
+  ]
+ },
+ {
+  "id": "cn-08",
+  "set": "chinese",
+  "query": "如何把应用打包成可执行 jar",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/using/packaging-for-production.adoc"
+  ]
+ },
+ {
+  "id": "cn-09",
+  "set": "chinese",
+  "query": "怎么查看应用的运行状态端点",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/actuator/endpoints.adoc"
+  ]
+ },
+ {
+  "id": "cn-10",
+  "set": "chinese",
+  "query": "如何排除某个自动配置类",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/using/auto-configuration.adoc"
+  ]
+ },
+ {
+  "id": "sym-01",
+  "set": "symbol",
+  "query": "@ConfigurationProperties",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/external-config.adoc",
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-actuator-docs/src/docs/antora/modules/api/pages/rest/actuator/configprops.adoc"
+  ]
+ },
+ {
+  "id": "sym-02",
+  "set": "symbol",
+  "query": "@SpringBootTest",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/testing/spring-boot-applications.adoc"
+  ]
+ },
+ {
+  "id": "sym-03",
+  "set": "symbol",
+  "query": "@WebMvcTest",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/testing/spring-boot-applications.adoc",
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/testing/test-modules.adoc",
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/how-to/pages/testing.adoc"
+  ]
+ },
+ {
+  "id": "sym-04",
+  "set": "symbol",
+  "query": "@ServiceConnection",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/testing/testcontainers.adoc",
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/data/nosql.adoc"
+  ]
+ },
+ {
+  "id": "sym-05",
+  "set": "symbol",
+  "query": "@EnableRedisWebSession",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/web/spring-session.adoc"
+  ]
+ },
+ {
+  "id": "sym-06",
+  "set": "symbol",
+  "query": "@AutoConfigureMockMvc",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/testing/spring-boot-applications.adoc"
+  ]
+ },
+ {
+  "id": "sym-07",
+  "set": "symbol",
+  "query": "spring.datasource.url",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/data/sql.adoc"
+  ]
+ },
+ {
+  "id": "sym-08",
+  "set": "symbol",
+  "query": "spring.profiles.active",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/profiles.adoc"
+  ]
+ },
+ {
+  "id": "sym-09",
+  "set": "symbol",
+  "query": "logging.level",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/features/logging.adoc"
+  ]
+ },
+ {
+  "id": "sym-10",
+  "set": "symbol",
+  "query": "spring.data.redis.host",
+  "expectedUrls": [
+   "https://github.com/spring-projects/spring-boot/blob/main/documentation/spring-boot-docs/src/docs/antora/modules/reference/pages/data/nosql.adoc"
+  ]
+ }
+]

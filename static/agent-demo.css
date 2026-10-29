@@ -1,0 +1,781 @@
+/* devknow · Agent 流式输出演示页
+   纯静态，无构建步骤：Spring Boot 直接把它当 static 资源发出去。
+   深色主题是刻意的 —— 演示流式输出时，浅色背景上的闪烁光标看不清楚。
+
+   两条布局约定：
+   1) 整页锁死在视口高度，滚动只发生在面板内部。早先是"页面自己滚 + 消息区再套一层"，
+      视口里出现两条滚动条，而且内层从文字中间硬切，看着像内容被截断。
+   2) 回答只占左栏，引用与事件流在右栏。引用挂在回答下面会把正文一路往上挤。 */
+
+:root {
+  --bg: #0e1116;
+  --panel: #161b22;
+  --panel-2: #1c232c;
+  --line: #2a323d;
+  --text: #e6edf3;
+  --dim: #8b949e;
+  --accent: #4c8dff;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --err: #f85149;
+  /* 这两个原先只以字面量出现在 citation / done 的事件配色里，
+     提到变量是因为示例问题按钮的配色要复用它们 —— 两处各写一份迟早会漂移 */
+  --cite: #a371f7;
+  --done: #58a6ff;
+  --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  /* 两团很淡的辉光，避免整页是一片死黑。透明度刻意压低：
+     主角是流式正文，背景只负责"不那么平" */
+  background:
+    radial-gradient(900px 420px at 12% -8%, rgba(76, 141, 255, .16), transparent 62%),
+    radial-gradient(760px 380px at 88% -12%, rgba(163, 113, 247, .13), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", Roboto, sans-serif;
+  overflow: hidden;               /* 滚动交给面板内部，避免内外两套滚动条 */
+}
+
+/* 满屏应用壳：不留外边距，三栏直接吃满视口。
+   滚动全部发生在栏内，页面本身不滚 —— 所以 body 上是 overflow:hidden。 */
+.page {
+  max-width: none;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 头部：压成一行，别抢正文的地方 ---------- */
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  position: relative;
+}
+
+/* 渐变分隔线代替纯色 1px：不增加视觉重量，但把顶部调色板带出来 */
+.head::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--done), var(--cite) 42%, var(--accent) 68%, transparent);
+  opacity: .6;
+}
+
+h1 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: .2px; white-space: nowrap; }
+h1 .brand {
+  background: linear-gradient(90deg, var(--done), var(--cite));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+h1 .dim { color: var(--dim); font-weight: 400; }
+.sub { margin: 0; color: var(--dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+code { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  margin-left: auto;
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 11.5px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--dim); flex: none; }
+.status.busy .dot { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+.status.ok .dot { background: var(--ok); }
+.status.err .dot { background: var(--err); }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* ---------- 布局：左会话列表 / 中回答 / 右依据+过程 ---------- */
+
+.layout {
+  flex: 1;
+  min-height: 0;                  /* 关键：少了它子项以内容高度为最小高度，滚动容器会被撑破 */
+  display: grid;
+  /* 三栏贴边：会话列表 / 回答 / 依据+过程。列之间用 1px 分隔线，不再用间距 */
+  grid-template-columns: 232px minmax(0, 1fr) 320px;
+  gap: 0;
+}
+
+.panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 0;
+  border-right: 1px solid var(--line);   /* 只画右边界，最右一栏去掉（见下） */
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.layout > .panel:last-child { border-right: 0; }
+
+/* ---------- 消息区 ---------- */
+
+.messages-wrap { position: relative; flex: 1; min-height: 0; }
+
+/* 上下渐隐：滚到边界时内容淡出而不是被刀切，一眼就知道"上面/下面还有"。
+   用覆盖层而不是 mask-image，免得把滚动条也一起淡掉。
+   22px 渐隐配 20px 内边距，未滚动时只压到内容约 2px，几乎看不出来。 */
+.messages-wrap::before,
+.messages-wrap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.messages-wrap::before { top: 0; background: linear-gradient(var(--panel), rgba(22, 27, 34, 0)); }
+.messages-wrap::after { bottom: 0; background: linear-gradient(rgba(22, 27, 34, 0), var(--panel)); }
+
+.messages {
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 用户往上翻的时候别把他拽回底部，只给这个按钮 */
+.jump {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  z-index: 2;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
+}
+
+.jump:hover { border-color: var(--accent); color: var(--accent); }
+.jump[hidden] { display: none; }
+
+.empty { margin: auto; text-align: center; color: var(--dim); }
+.empty-title { margin: 0 0 14px; font-size: 13px; }
+.empty-note { margin: 14px 0 0; font-size: 11.5px; color: var(--dim); opacity: .8; }
+.samples { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+.sample {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sc-bg, var(--panel-2));
+  color: var(--sc, var(--text));
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+
+/* 五个色档轮着用，颜色取自事件配色（accent / ok / cite / done / warn）。
+   问题随机取、色档随机起头，所以每批的配色组合也不一样 */
+.sample.c1 { --sc: var(--accent); --sc-bg: rgba(76, 141, 255, .13); }
+.sample.c2 { --sc: var(--ok);     --sc-bg: rgba(63, 185, 80, .13); }
+.sample.c3 { --sc: var(--cite);   --sc-bg: rgba(163, 113, 247, .15); }
+.sample.c4 { --sc: var(--done);   --sc-bg: rgba(88, 166, 255, .13); }
+.sample.c5 { --sc: var(--warn);   --sc-bg: rgba(210, 153, 34, .15); }
+
+.sample:hover {
+  border-color: var(--sc, var(--accent));
+  box-shadow: 0 5px 16px -6px var(--sc, var(--accent));
+  transform: translateY(-1px);
+}
+
+.msg { display: flex; flex-direction: column; gap: 6px; }
+.msg.user { align-items: flex-end; }
+
+.bubble {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.msg.user .bubble {
+  background: linear-gradient(135deg, var(--accent), var(--done));
+  color: #fff;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 6px 18px -10px var(--accent);
+}
+
+.answer {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+  max-width: 100%;
+}
+
+.answer-body { white-space: pre-wrap; word-break: break-word; min-height: 1.6em; }
+
+/* 流式光标：只在生成中显示 */
+.cursor {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 2px;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: blink .9s steps(1) infinite;
+}
+
+.cursor.hidden { display: none; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  min-height: 18px;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.badge.step { color: var(--accent); border-color: #24406e; }
+.badge.tool { color: var(--warn); border-color: #4a3a12; }
+.badge.err { color: var(--err); border-color: #5c2422; }
+
+/* ---------- 输入区 ---------- */
+
+.composer { flex: none; border-top: 1px solid var(--line); padding: 12px 14px 14px; background: #12171e; }
+.composer-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.composer-tools { display: flex; align-items: center; gap: 10px; }
+
+/* 会话指示：start 事件返回的 conversationId。
+   做成药丸 + 等宽字体，和旁边的按钮区分开 —— 它是"状态"不是"操作" */
+.conv {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.conv.active { color: var(--text); border-color: var(--dim); }
+
+.field { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); }
+.field input {
+  width: 68px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+textarea:focus, input:focus { outline: none; border-color: var(--accent); }
+
+.composer-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
+.hint { font-size: 12px; color: var(--dim); }
+
+button.primary, button.ghost {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+button.primary { background: var(--accent); color: #fff; }
+button.primary:disabled { background: #2c3a52; color: var(--dim); cursor: not-allowed; }
+
+button.ghost { background: transparent; border-color: var(--line); color: var(--dim); }
+button.ghost:hover:not(:disabled) { color: var(--text); border-color: var(--dim); }
+button.ghost:disabled { opacity: .45; cursor: not-allowed; }
+button.ghost.small { padding: 3px 9px; font-size: 11.5px; }
+
+/* ---------- 右栏：依据 + 过程 ---------- */
+
+.side-block { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+/* 引用一般 5 条左右，给个上限；没有引用时自然塌缩。
+   下半区必须写 flex: 1 1 0（basis 0），不能写 1 1 auto：
+   basis:auto 取的是"日志全部内容的高度"（几百行），按比例收缩时
+   负的剩余空间会把 .cites-block 一起压到 0 —— 引用就被下面那块的标题盖住了。 */
+.cites-block { flex: 0 0 auto; max-height: 46%; }
+.log-block { flex: 1 1 0; border-top: 1px solid var(--line); }
+
+.side-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; }
+.side-head h2 { margin: 0; font-size: 12px; font-weight: 600; color: var(--dim); letter-spacing: .3px; }
+
+/* 标题前一小段色条：一眼能分左右两块讲的是什么，比加图标省地方。
+   颜色跟对应的事件配色一致 —— 引用是紫的（citation），过程是蓝的（step/tool） */
+.side-head h2::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 11px;
+  margin-right: 7px;
+  border-radius: 2px;
+  vertical-align: -1px;
+  background: var(--rule, var(--dim));
+}
+.cites-block .side-head h2 { --rule: var(--cite); }
+.log-block .side-head h2 { --rule: var(--accent); }
+
+.side-head .ghost { margin-left: auto; }
+.count { font-family: var(--mono); font-size: 11px; color: var(--dim); opacity: .7; }
+
+.cites {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cites:empty::before { content: '本次回答暂未检索到引用'; color: var(--dim); font-size: 12px; }
+
+.cite {
+  display: block;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 7px;
+  background: var(--panel-2);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cite:hover { border-left-color: var(--ok); }
+.cite .id { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-right: 6px; }
+.cite .title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.legend { flex: none; display: flex; flex-wrap: wrap; gap: 5px; padding: 0 14px 8px; }
+
+.chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  border: 1px solid var(--line);
+}
+
+.chip.start { color: var(--dim); }
+.chip.step { color: var(--accent); }
+.chip.delta { color: var(--ok); }
+.chip.tool { color: var(--warn); }
+.chip.citation { color: var(--cite); }
+.chip.done { color: var(--done); }
+.chip.error { color: var(--err); }
+
+.log {
+  flex: 1;
+  min-height: 0;                  /* 同上：不写它，flex 子项会被内容撑高，滚动条不出现 */
+  margin: 0;
+  padding: 0 14px 12px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.log .e-start { color: var(--dim); }
+.log .e-step { color: var(--accent); }
+.log .e-delta { color: var(--ok); }
+.log .e-tool { color: var(--warn); }
+.log .e-citation { color: var(--cite); }
+.log .e-done { color: var(--done); }
+.log .e-error { color: var(--err); }
+
+/* ---------- 首字之前的"思考中"态 ----------
+
+   这一块解决的是体感问题：请求发出后要等 4~5 秒才有第一个字，
+   期间若是一块空白，用户分不清"在算"还是"死了"。
+   文案由 SSE 的真实事件驱动（start / step / tool / citation），
+   所以是本项目真实的阶段，而不是定时轮播的假进度。 */
+
+.think {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow: hidden;
+  max-height: 200px;
+  opacity: 1;
+  transition: max-height .32s ease, opacity .2s ease, padding .32s ease;
+}
+
+/* 折叠态：高度归零，正文自然顶上来。
+   transition 而不是 display:none —— 直接消失像"内容被删了"，
+   塌缩才读得出"思考结束了" */
+.think.gone {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.think-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
+
+/* 锥形渐变的旋转环。选它而不是"三个跳动的点"，因为环更像"在算"，
+   而点更像"在等"；而且纯 CSS 驱动，主线程被 delta 刷爆时也不掉帧 */
+.think-orb {
+  position: relative;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--accent) 130deg, var(--cite) 250deg, transparent 360deg);
+  animation: orb-spin 1.1s linear infinite;
+}
+
+/* 挖空中心做成环：直接用 border 做不出渐变 */
+.think-orb::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--panel-2);
+}
+
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+
+/* 阶段文字走一遍渐变扫光：既表示"还在动"，亮度又压在正文之下，不抢注意力 */
+.think-text {
+  font-size: 12.5px;
+  background: linear-gradient(90deg, var(--dim) 0%, var(--text) 40%, var(--dim) 82%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: text-sweep 2.6s linear infinite;
+}
+
+@keyframes text-sweep {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* 等宽 + tabular-nums：数字逐位跳动时宽度不变，否则右手边的正文会被推来推去 */
+.think-timer {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+  opacity: .85;
+}
+
+/* 不定长进度条：不表示百分比（这里没有可信的分母），只表示"在推进" */
+.think-bar {
+  position: relative;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(42, 50, 61, .75);
+  overflow: hidden;
+}
+
+.think-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--cite), transparent);
+  animation: bar-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes bar-slide {
+  from { left: -40%; }
+  to { left: 100%; }
+}
+
+/* 骨架条：提前占住"这段会有正文"的位置，首字到达时不会整块跳一下 */
+.think-skeleton { display: flex; flex-direction: column; gap: 7px; }
+
+.think-skeleton i {
+  display: block;
+  height: 7px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #2b3644 25%, #3e4d60 37%, #2b3644 63%);
+  background-size: 400% 100%;
+  animation: skel-sweep 1.7s ease-in-out infinite;
+}
+
+.think-skeleton i:nth-child(2) { animation-delay: .18s; }
+.think-skeleton i:nth-child(3) { animation-delay: .36s; }
+
+@keyframes skel-sweep {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* 思考结束后留下的药丸：这是用户唯一能看到的"等了多久"，
+   而且它算的是"请求发出 → 第一个字"，不是生成总时长 */
+.badge.think-pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--cite);
+  border-color: rgba(163, 113, 247, .38);
+  background: rgba(163, 113, 247, .12);
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.badge.think-pill::before { content: '◷ '; }
+.badge.think-pill.open::before { content: '◴ '; }
+
+.badge.think-pill:hover {
+  border-color: var(--cite);
+  box-shadow: 0 3px 12px -6px var(--cite);
+}
+
+/* 生成总时长：DOM 里留着（可调试、可复制），但渲染上彻底不可见。
+   用绝对定位 + opacity:0 而不是只把文字刷成透明 —— 只刷颜色的话，
+   那个药丸仍然占着版面，会在"已思考"和"5 条引用"之间留一道说不清的空隙 */
+.t-total {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- 会话列表 ---------- */
+
+/* 列表项只放标题 + 相对时间。不显示消息正文摘要：
+   那要么多一次查询，要么在服务端多存一份派生数据，为了一行预览不值得 */
+
+.convs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 底部多留一截：最后一条不要贴着分页按钮，滚动到底时有"到这儿为止"的呼吸感 */
+  padding: 0 8px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  /* 隐藏滚动条：45 条会话时它常驻在右边缘，比列表本身还显眼。
+     滚动能力保留（滚轮、触摸板、方向键照常），只是不再画那条轨道 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* 下边缘淡出：代替滚动条告诉用户"下面还有"，也顺手盖住被裁掉半行的那一条 */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+}
+
+.convs::-webkit-scrollbar { width: 0; height: 0; }
+
+/* 分页按钮固定在列表下方（不在滚动区内），永远可见。
+   加一条上边线 + 不透明底色，让它读起来是"页脚"而不是被裁掉的列表项 */
+.convs-foot {
+  flex: none;
+  padding: 8px 10px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.convs-foot[hidden] { display: none; }
+
+.convs .conv-more { width: 100%; }
+
+.convs:empty::before {
+  content: '还没有会话，问一句就会出现';
+  display: block;
+  padding: 4px 7px;
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.conv-item {
+  position: relative;
+  padding: 7px 26px 7px 9px;
+  border: 1px solid transparent;
+  /* 左边预留一道色条：hover / 选中时点亮，比整块背景变化更好认 */
+  border-left: 2px solid transparent;
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+/* hover 要能一眼看出来：底色 + 边框 + 左色条 + 标题提亮，四件事一起做 */
+.conv-item:hover {
+  background: rgba(76, 141, 255, .10);
+  border-color: rgba(76, 141, 255, .30);
+  border-left-color: var(--accent);
+}
+
+.conv-item:hover .t { color: #fff; }
+
+/* 当前会话：比 hover 更实一档，两者不能长得一样 */
+.conv-item.active {
+  background: rgba(76, 141, 255, .17);
+  border-color: rgba(76, 141, 255, .55);
+  border-left-color: var(--done);
+}
+
+.conv-item .t {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.conv-item .m {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+.conv-item.active .m { color: var(--accent); }
+
+/* 删除按钮平时透明，hover / 选中才露头 —— 常驻会让列表看起来像一堆叉 */
+.conv-del {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--dim);
+  font: 12px/1 var(--mono);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s, color .15s, background .15s;
+}
+
+.conv-item:hover .conv-del,
+.conv-item.active .conv-del { opacity: 1; }
+
+.conv-del:hover { color: var(--err); background: rgba(248, 81, 73, .16); }
+
+/* 默认只渲染最近 20 条。45 条全铺出来一屏都是标题，反而找不到想翻的那条。
+   按钮本身钉在 .convs-foot 里（不在滚动区内），所以这里只负责长相 */
+.conv-more {
+  padding: 6px 9px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dim);
+  text-align: center;
+  transition: color .15s, border-color .15s, background .15s;
+}
+
+.conv-more:hover {
+  color: var(--accent);
+  border-color: rgba(76, 141, 255, .5);
+  background: rgba(76, 141, 255, .07);
+}
+
+/* 历史消息里的失败 / 空回答：用弱化的斜体说明，不要渲染成正常正文，
+   否则用户会以为这就是模型当时的回答 */
+.answer-body.muted {
+  color: var(--dim);
+  font-style: italic;
+}
+
+/* ---------- 窄屏 / 矮窗口回退 ---------- */
+
+/* ---------- 响应式 ---------- */
+
+/* 1280 以下先收右栏（引用/事件流可以窄一点，正文不该窄） */
+@media (max-width: 1280px) {
+  .layout { grid-template-columns: 208px minmax(0, 1fr) 288px; }
+}
+
+/* 1080 以下连会话列表一起收，正文仍吃剩余宽度 */
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: 168px minmax(0, 1fr) 248px; }
+  .head { padding: 10px 12px; }
+  .sub { display: none; }        /* 标题栏先牺牲副标题，别让它挤掉状态灯 */
+}
+
+/* 900 以下三栏堆叠：分隔线从"竖"改成"横" */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .layout > .panel:last-child { border-bottom: 0; }
+  /* 堆叠后会话列表变成顶部一条可滚动的带子 */
+  .convs-panel { max-height: 34vh; }
+  .convs-foot { padding-bottom: 10px; }
+}
+
+/* 视口塞不下两个面板时退回文档流，各自限高。
+   否则 100vh 的壳会把内容压到没法用。 */
+@media (max-width: 900px), (max-height: 560px) {
+  body { overflow: auto; }
+  .page { height: auto; min-height: 100%; }
+  .layout { flex: none; }
+  .messages-wrap { flex: none; }
+  .messages { height: auto; max-height: 56vh; }
+  .cites-block { max-height: none; }
+  .cites { max-height: 26vh; }
+  .log-block { flex: none; }
+  .log { max-height: 34vh; }
+}

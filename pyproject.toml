@@ -1,0 +1,34 @@
+# 版本上界是刻意的：不加上界会装到 1.x 的 langgraph 配 0.3 的 core，那套组合 import 就报错。
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[project]
+name = "devknow-py"
+version = "0.1.0"
+description = "面向研发文档的跨语言 RAG 问答系统（LangChain + LangGraph）"
+requires-python = ">=3.10"
+
+dependencies = [
+    # 检索层：LangChain 提供接口，SQL 自己写
+    "langchain>=0.3,<0.4",
+    "langchain-core>=0.3.7",
+    "langchain-openai>=0.3",          # 用 OpenAI 协议接 SiliconFlow
+    # 编排层：只有它做得了"首步强制工具调用"和显式拒答分支
+    "langgraph>=0.2,<0.4",
+    # 数据库：只读连接现有 PostgreSQL，不用 ORM
+    "psycopg[binary]>=3.1",
+    "psycopg-pool>=3.2",
+    # 接口
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "sse-starlette>=2.0",
+    # 配置
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
